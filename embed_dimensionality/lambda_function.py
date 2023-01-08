@@ -3,6 +3,7 @@ import boto3
 import numpy as np
 from io import BytesIO
 from urllib.parse import urlparse
+from sklearn.manifold import TSNE
 
 s3_client = boto3.client('s3')
 
@@ -19,10 +20,27 @@ def _download_data_from_s3(s3_uri: str) -> np.ndarray:
 
     return np.load(bytes_, allow_pickle=True)
 
+
 def lambda_handler(event, context):
-    s3_bucket = 'lsc-stepfunctions-project'
-    s3_key = 'mnist'
-    s3_uri = f"s3://{s3_bucket}/{s3_key}"
+    s3_uri = event['body']['location']
+    embedding_config = event['body']['configuration']['embedding']
+    n_components = embedding_config['t-SNE']['parameters']['n_components']
+    perplexity = embedding_config['t-SNE']['parameters']['perplexity']
 
     data: np.ndarray =  _download_data_from_s3(s3_uri)
-    return f"Data with {data.shape} shape downloaded from {s3_uri}"
+    
+    tsne_embedding = TSNE(
+        n_components=n_components,
+        perplexity=perplexity
+    ).fit_transform(data)
+
+    configuration = event['body']['configuration']
+    del configuration['embedding']
+
+    return {
+        'statusCode': 200,
+        'body': {
+            'location': s3_uri,
+            'configuration': configuration
+        }
+    }

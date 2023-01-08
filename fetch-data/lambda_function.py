@@ -1,10 +1,9 @@
 import json
-from io import BytesIO
-from urllib.parse import urlparse
-
 import boto3
 import numpy as np
 import sklearn.datasets
+from io import BytesIO
+from urllib.parse import urlparse
 
 s3_client = boto3.client('s3')
 
@@ -22,10 +21,10 @@ def _upload_data_to_s3(data: np.ndarray, s3_uri: str) -> None:
 
 
 def lambda_handler(event, context):
-    dataset_config = event["configuration"]["dataset"]
+    dataset_config = event['configuration']['dataset']
 
     dataset = sklearn.datasets.fetch_openml(
-        dataset_config["name"],
+        dataset_config['name'],
         data_home='/tmp/sklearn'
     )
     data = dataset.data
@@ -36,4 +35,14 @@ def lambda_handler(event, context):
     s3_uri = f"s3://{s3_bucket}/{s3_key}"
 
     _upload_data_to_s3(data, s3_uri)
-    return f"Data with {data.shape} shape uploaded to {s3_uri}"
+
+    configuration = event['configuration']
+    del configuration['dataset']
+
+    return {
+        'statusCode': 200,
+        'body': {
+            'location': s3_uri,
+            'configuration': configuration
+        }
+    }
