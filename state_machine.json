@@ -1,0 +1,63 @@
+{
+    "StartAt": "Parse-Config",
+    "States": {
+        "Parse-Config": {
+            "Type": "Task",
+            "Resource": "arn:aws:lambda:us-east-1:968167118559:function:parse-config",
+            "Next": "Fetch-Data"
+        },
+        "Fetch-Data": {
+            "Type": "Task",
+            "Resource": "arn:aws:lambda:us-east-1:968167118559:function:fetch-data",
+            "Next": "Embed-Dimensionality"
+        },
+        "Embed-Dimensionality": {
+            "Type": "Task",
+            "Resource": "arn:aws:lambda:us-east-1:968167118559:function:embed-dimensionality",
+            "Next": "Pass-Embedding-Completed"
+        },
+        "Pass-Embedding-Completed": {
+            "Type": "Pass",
+            "Result": {
+                "state": "success"
+            },
+            "Next": "Parallel-Training"
+        },
+        "Parallel-Training": {
+            "Type": "Map",
+            "MaxConcurrency": 10,
+            "Iterator": {
+                "StartAt": "Train-Model-And-Perform-Classification",
+                "States": {
+                    "Train-Model-And-Perform-Classification": {
+                        "Type": "Task",
+                        "Resource": "arn:aws:lambda:us-east-1:123456789012:function:HelloFunction",
+                        "End": true
+                    }
+                }
+            },
+            "Next": "Compare-Accuracy-And-Threshold"
+        },
+        "Compare-Accuracy-And-Threshold": {
+            "Type": "Choice",
+            "Choices": [
+                {
+                    "Variable": "$.Accuracy",
+                    "NumericGreaterThan": 0.7,
+                    "Next": "Generate-Report"
+                }
+            ],
+            "Default": "Embed-Dimensionality"
+        },
+        "Generate-Report": {
+            "Type": "Task",
+            "Resource": "arn:aws:lambda:us-east-1:123456789012:function:HelloFunction",
+            "Next": "Send-Summary-Email"
+        },
+        "Send-Summary-Email": {
+            "Type": "Task",
+            "Resource": "arn:aws:lambda:us-east-1:123456789012:function:HelloFunction",
+            "End": true
+        }
+    }
+}
