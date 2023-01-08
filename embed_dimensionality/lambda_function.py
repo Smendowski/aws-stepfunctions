@@ -1,5 +1,6 @@
 import json
 import boto3
+from time import perf_counter
 import numpy as np
 from io import BytesIO
 from urllib.parse import urlparse
@@ -21,26 +22,21 @@ def _download_data_from_s3(s3_uri: str) -> np.ndarray:
     return np.load(bytes_, allow_pickle=True)
 
 
-def lambda_handler(event, context):
-    s3_uri = event['body']['location']
-    embedding_config = event['body']['configuration']['embedding']
-    n_components = embedding_config['t-SNE']['parameters']['n_components']
-    perplexity = embedding_config['t-SNE']['parameters']['perplexity']
+def lambda_handler(event, context) -> str:
+    embedding_config = event['embedding']
+    technique = list(embedding_config.keys())[0]
+    n_components = embedding_config[technique]['parameters']['n_components']
+    perplexity = embedding_config[technique]['parameters']['perplexity']
+
+    s3_uri = event['workflow_results']['raw_data_location']
 
     data: np.ndarray =  _download_data_from_s3(s3_uri)
     
-    tsne_embedding = TSNE(
+    start = perf_counter()
+    _ = TSNE(
         n_components=n_components,
         perplexity=perplexity
     ).fit_transform(data)
+    elapsed_time = perf_counter() - start
 
-    configuration = event['body']['configuration']
-    del configuration['embedding']
-
-    return {
-        'statusCode': 200,
-        'body': {
-            'location': s3_uri,
-            'configuration': configuration
-        }
-    }
+    return f"{elapsed_time:.2f} seconds"

@@ -2,18 +2,19 @@
 version: "0.1"
 configuration:
   dataset:
-    name: mnist_784
-    size: 5000
-  training:
-    train_test_split_ratio: 0.9
+    mnist_784:
+      parameters:
+        rows: 5000
   embedding:
-    t-SNE:
+    TSNE:
       parameters:
         n_components: 2
         perplexity: 40
-  pararell:
-    training:
-      instances: 1
+  training:
+    train_test_split_ratio: 0.9
+pararell:
+  training:
+    instances: 1
 notification:
   notify: True
   target: [lsc-project@gmail.com]

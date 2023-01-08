@@ -9,11 +9,15 @@
         "Fetch-Data": {
             "Type": "Task",
             "Resource": "arn:aws:lambda:us-east-1:968167118559:function:fetch-data",
+            "InputPath": "$.configuration",
+            "ResultPath": "$.configuration.workflow_results.raw_data_location",
             "Next": "Embed-Dimensionality"
         },
         "Embed-Dimensionality": {
             "Type": "Task",
             "Resource": "arn:aws:lambda:us-east-1:968167118559:function:embed-dimensionality",
+            "InputPath": "$.configuration",
+            "ResultPath": "$.configuration.workflow_results.embedding_time",
             "Next": "Pass-Embedding-Completed"
         },
         "Pass-Embedding-Completed": {

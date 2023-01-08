@@ -7,7 +7,6 @@ from urllib.parse import urlparse
 
 s3_client = boto3.client('s3')
 
-
 def _upload_data_to_s3(data: np.ndarray, s3_uri: str) -> None:
     bytes_ = BytesIO()
     np.save(bytes_, data, allow_pickle=True)
@@ -20,15 +19,17 @@ def _upload_data_to_s3(data: np.ndarray, s3_uri: str) -> None:
     )
 
 
-def lambda_handler(event, context):
-    dataset_config = event['configuration']['dataset']
+def lambda_handler(event, context) -> str:
+    dataset_config = event['dataset']
+    dataset_name: str = list(dataset_config.keys())[0]
+    n_rows: int = dataset_config[dataset_name]['parameters']['rows']
 
     dataset = sklearn.datasets.fetch_openml(
-        dataset_config['name'],
+        dataset_name,
         data_home='/tmp/sklearn'
     )
     data = dataset.data
-    data = data[:dataset_config["size"]]
+    data = data[:n_rows]
 
     s3_bucket = 'lsc-stepfunctions-project'
     s3_key = 'mnist'
@@ -36,13 +37,4 @@ def lambda_handler(event, context):
 
     _upload_data_to_s3(data, s3_uri)
 
-    configuration = event['configuration']
-    del configuration['dataset']
-
-    return {
-        'statusCode': 200,
-        'body': {
-            'location': s3_uri,
-            'configuration': configuration
-        }
-    }
+    return s3_uri
